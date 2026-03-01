@@ -14,7 +14,7 @@ class PipelineAdmin(admin.ModelAdmin):
 @admin.register(Stage)
 class StageAdmin(admin.ModelAdmin):
     list_display = ("name", "pipeline", "order", "kind", "probability", "color", "wip_limit")
-    list_filter = ("pipeline__organization", "pipeline", "kind")
+    list_filter = ("pipeline", "kind")
     search_fields = ("name", "slug", "pipeline__name", "pipeline__organization__name")
     readonly_fields = ("created_at", "updated_at")
 
@@ -44,4 +44,3 @@ class StageMovementAdmin(admin.ModelAdmin):
     list_filter = ("organization", "to_stage", "moved_by")
     search_fields = ("deal__title", "deal__lead__full_name", "moved_by__email", "note")
     readonly_fields = ("moved_at",)
-
