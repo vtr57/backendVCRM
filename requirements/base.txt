@@ -1,0 +1,8 @@
+Django==5.1.6
+djangorestframework==3.15.2
+djangorestframework-simplejwt==5.5.0
+django-cors-headers==4.7.0
+django-filter==25.1
+psycopg[binary]==3.2.6
+sentry-sdk==2.24.1
+whitenoise==6.9.0
