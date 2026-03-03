@@ -1,6 +1,7 @@
 from django.db import transaction
 from rest_framework import serializers
 
+from apps.leads.decimal_utils import normalize_decimal_input
 from apps.leads.models import Lead, LeadSource, Tag
 from apps.users.models import Membership, User
 
@@ -86,6 +87,11 @@ class LeadDetailSerializer(LeadListSerializer):
         fields = LeadListSerializer.Meta.fields
 
 
+class LocalizedDecimalField(serializers.DecimalField):
+    def to_internal_value(self, data):
+        return super().to_internal_value(normalize_decimal_input(data))
+
+
 class LeadWriteSerializer(serializers.ModelSerializer):
     source_id = serializers.UUIDField(required=False, allow_null=True, write_only=True)
     tag_ids = serializers.ListField(
@@ -94,6 +100,7 @@ class LeadWriteSerializer(serializers.ModelSerializer):
         write_only=True,
     )
     assigned_to_id = serializers.UUIDField(required=False, allow_null=True, write_only=True)
+    estimated_value = LocalizedDecimalField(max_digits=12, decimal_places=2, required=False)
 
     class Meta:
         model = Lead

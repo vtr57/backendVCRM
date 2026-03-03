@@ -15,6 +15,7 @@ from rest_framework.response import Response
 
 from apps.interactions.serializers import InteractionSerializer
 from apps.interactions.services import filter_interactions_for_membership
+from apps.leads.decimal_utils import normalize_decimal_input
 from apps.leads.filters import LeadFilter
 from apps.leads.models import Lead, LeadSource, Tag
 from apps.leads.pagination import LeadPagination
@@ -238,14 +239,8 @@ class LeadViewSet(OrganizationScopedBaseViewSet):
             if not value:
                 return Decimal("0")
 
-            normalized = value.replace("R$", "").replace(" ", "")
-            if "," in normalized and "." in normalized:
-                normalized = normalized.replace(".", "").replace(",", ".")
-            else:
-                normalized = normalized.replace(",", ".")
-
             try:
-                return Decimal(normalized)
+                return Decimal(normalize_decimal_input(value))
             except InvalidOperation as exc:
                 raise ValueError(f"{field_name} must be a valid decimal value.") from exc
 

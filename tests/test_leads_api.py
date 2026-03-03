@@ -57,7 +57,7 @@ def test_manager_can_create_sources_tags_and_leads():
             "company_name": "Acme Ltda",
             "source_id": source_response.json()["id"],
             "tag_ids": [tag_response.json()["id"]],
-            "estimated_value": "3500.00",
+            "estimated_value": "3500,50",
         },
         format="json",
     )
@@ -67,6 +67,7 @@ def test_manager_can_create_sources_tags_and_leads():
     assert lead.status == Lead.Status.NEW
     assert lead.created_by_id == user.id
     assert lead.organization_id == organization.id
+    assert str(lead.estimated_value) == "3500.50"
     assert list(lead.tags.values_list("name", flat=True)) == ["VIP"]
 
 
