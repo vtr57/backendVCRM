@@ -1,4 +1,7 @@
+import json
+
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 
 from apps.leads.models import Lead, LeadSource, Tag
@@ -240,6 +243,54 @@ def test_manager_can_bulk_delete_selected_leads():
     assert first.deleted_at is not None
     assert second.deleted_at is not None
     assert remaining.deleted_at is None
+
+
+@pytest.mark.django_db
+def test_import_csv_accepts_portuguese_template_columns():
+    user = User.objects.create_user(email="importer@crm.com", password="StrongPass123")
+    organization = Organization.objects.create(name="Import", slug="import")
+    Membership.objects.create(
+        user=user,
+        organization=organization,
+        role=Membership.Role.MANAGER,
+        is_default=True,
+    )
+
+    client = auth_client_for(user)
+    csv_file = SimpleUploadedFile(
+        "leads.csv",
+        "Nome,Email,Telefone,Empresa,Cargo,Fonte,Temperatura,Valor estimado,Origem\n"
+        "Maria Silva,maria@example.com,11999999999,Acme Ltda,Compradora,Meta,quente,\"3500,50\",Instagram\n".encode(),
+        content_type="text/csv",
+    )
+    mapping = {
+        "full_name": "Nome",
+        "email": "Email",
+        "phone": "Telefone",
+        "company_name": "Empresa",
+        "job_title": "Cargo",
+        "source_alias": "Fonte",
+        "temperature": "Temperatura",
+        "estimated_value": "Valor estimado",
+        "source": "Origem",
+    }
+
+    response = client.post(
+        "/api/v1/leads/import_csv/",
+        {"file": csv_file, "mapping": json.dumps(mapping)},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["imported_count"] == 1
+
+    lead = Lead.objects.get(full_name="Maria Silva")
+    assert lead.email == "maria@example.com"
+    assert lead.phone == "11999999999"
+    assert lead.company_name == "Acme Ltda"
+    assert lead.job_title == "Compradora"
+    assert str(lead.estimated_value) == "3500.50"
+    assert lead.temperature == Lead.Temperature.HOT
+    assert lead.source.name == "Instagram"
 
 
 @pytest.mark.django_db

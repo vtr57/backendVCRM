@@ -32,11 +32,13 @@ from apps.leads.serializers import (
 from apps.users.models import Membership
 
 IMPORTABLE_LEAD_FIELDS = [
-    "organization",
     "full_name",
     "email",
     "phone",
+    "company_name",
     "job_title",
+    "source_alias",
+    "temperature",
     "source",
     "estimated_value",
 ]
@@ -289,11 +291,30 @@ class LeadViewSet(OrganizationScopedBaseViewSet):
             )
             return source
 
+        def parse_temperature_value(value):
+            if not value:
+                return Lead.Temperature.COLD
+
+            normalized = value.strip().lower()
+            temperatures = {
+                "cold": Lead.Temperature.COLD,
+                "frio": Lead.Temperature.COLD,
+                "warm": Lead.Temperature.WARM,
+                "morno": Lead.Temperature.WARM,
+                "hot": Lead.Temperature.HOT,
+                "quente": Lead.Temperature.HOT,
+            }
+            try:
+                return temperatures[normalized]
+            except KeyError as exc:
+                raise ValueError("temperature must be frio, morno, quente, cold, warm or hot.") from exc
+
         full_name = mapped_value("full_name")
         if not full_name:
             raise ValueError("full_name is required.")
 
-        source = resolve_source(mapped_value("source"))
+        source = resolve_source(mapped_value("source") or mapped_value("source_alias"))
+        temperature = parse_temperature_value(mapped_value("temperature"))
         estimated_value = parse_decimal_value(
             mapped_value("estimated_value"),
             "estimated_value",
@@ -305,10 +326,11 @@ class LeadViewSet(OrganizationScopedBaseViewSet):
             full_name=full_name,
             email=mapped_value("email"),
             phone=mapped_value("phone"),
+            company_name=mapped_value("company_name"),
             job_title=mapped_value("job_title"),
             source=source,
             status=Lead.Status.NEW,
-            temperature=Lead.Temperature.COLD,
+            temperature=temperature,
             estimated_value=estimated_value,
             notes_summary="",
         )
