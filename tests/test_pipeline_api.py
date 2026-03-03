@@ -240,6 +240,44 @@ def test_move_to_lost_requires_reason():
 
 
 @pytest.mark.django_db
+def test_delete_deal_removes_only_deal_and_keeps_lead():
+    user = User.objects.create_user(email="delete-deal@crm.com", password="StrongPass123")
+    organization = Organization.objects.create(name="Delete Deal", slug="delete-deal")
+    Membership.objects.create(
+        user=user,
+        organization=organization,
+        role=Membership.Role.MANAGER,
+        is_default=True,
+    )
+    lead = Lead.objects.create(
+        organization=organization,
+        full_name="Lead Mantido",
+        created_by=user,
+        assigned_to=user,
+    )
+    pipeline = Pipeline.objects.get(organization=organization, is_default=True)
+    first_stage = pipeline.stages.filter(kind=Stage.Kind.OPEN).order_by("order").first()
+    deal = Deal.objects.create(
+        organization=organization,
+        lead=lead,
+        pipeline=pipeline,
+        stage=first_stage,
+        title="Deal Removido",
+        amount="3200.00",
+        owner=user,
+        created_by=user,
+        position=0,
+    )
+
+    client = auth_client_for(user)
+    response = client.delete(f"/api/v1/deals/{deal.id}/")
+
+    assert response.status_code == 204
+    assert not Deal.objects.filter(id=deal.id).exists()
+    assert Lead.objects.filter(id=lead.id).exists()
+
+
+@pytest.mark.django_db
 def test_sales_board_only_returns_owned_or_assigned_deals():
     sales = User.objects.create_user(email="sales-board@crm.com", password="StrongPass123")
     manager = User.objects.create_user(email="manager-board@crm.com", password="StrongPass123")
