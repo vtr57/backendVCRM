@@ -198,6 +198,94 @@ def test_delete_is_soft_delete_and_excludes_from_default_listing():
 
 
 @pytest.mark.django_db
+def test_manager_can_bulk_delete_selected_leads():
+    user = User.objects.create_user(email="owner-bulk@crm.com", password="StrongPass123")
+    organization = Organization.objects.create(name="Bulk", slug="bulk")
+    Membership.objects.create(
+        user=user,
+        organization=organization,
+        role=Membership.Role.MANAGER,
+        is_default=True,
+    )
+    first = Lead.objects.create(
+        organization=organization,
+        full_name="Lead One",
+        created_by=user,
+    )
+    second = Lead.objects.create(
+        organization=organization,
+        full_name="Lead Two",
+        created_by=user,
+    )
+    remaining = Lead.objects.create(
+        organization=organization,
+        full_name="Lead Three",
+        created_by=user,
+    )
+
+    client = auth_client_for(user)
+    response = client.post(
+        "/api/v1/leads/bulk_delete/",
+        {"lead_ids": [str(first.id), str(second.id)]},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["deleted_count"] == 2
+
+    first.refresh_from_db()
+    second.refresh_from_db()
+    remaining.refresh_from_db()
+
+    assert first.deleted_at is not None
+    assert second.deleted_at is not None
+    assert remaining.deleted_at is None
+
+
+@pytest.mark.django_db
+def test_bulk_delete_rejects_inaccessible_leads_for_sales():
+    sales = User.objects.create_user(email="sales-bulk@crm.com", password="StrongPass123")
+    manager = User.objects.create_user(email="manager-bulk@crm.com", password="StrongPass123")
+    organization = Organization.objects.create(name="Theta", slug="theta")
+    Membership.objects.create(
+        user=sales,
+        organization=organization,
+        role=Membership.Role.SALES,
+        is_default=True,
+    )
+    Membership.objects.create(
+        user=manager,
+        organization=organization,
+        role=Membership.Role.MANAGER,
+        is_default=True,
+    )
+    visible = Lead.objects.create(
+        organization=organization,
+        full_name="Visible Lead",
+        created_by=sales,
+    )
+    hidden = Lead.objects.create(
+        organization=organization,
+        full_name="Hidden Lead",
+        created_by=manager,
+        assigned_to=manager,
+    )
+
+    client = auth_client_for(sales)
+    response = client.post(
+        "/api/v1/leads/bulk_delete/",
+        {"lead_ids": [str(visible.id), str(hidden.id)]},
+        format="json",
+    )
+
+    assert response.status_code == 404
+    visible.refresh_from_db()
+    hidden.refresh_from_db()
+    assert visible.deleted_at is None
+    assert hidden.deleted_at is None
+
+
+@pytest.mark.django_db
 def test_sales_cannot_manage_lead_settings():
     user = User.objects.create_user(email="sales2@crm.com", password="StrongPass123")
     organization = Organization.objects.create(name="Epsilon", slug="epsilon")

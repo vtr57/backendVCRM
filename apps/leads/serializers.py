@@ -87,6 +87,13 @@ class LeadDetailSerializer(LeadListSerializer):
         fields = LeadListSerializer.Meta.fields
 
 
+class LeadBulkDeleteSerializer(serializers.Serializer):
+    lead_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        allow_empty=False,
+    )
+
+
 class LocalizedDecimalField(serializers.DecimalField):
     def to_internal_value(self, data):
         return super().to_internal_value(normalize_decimal_input(data))

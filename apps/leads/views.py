@@ -3,6 +3,7 @@ import io
 import json
 from decimal import Decimal, InvalidOperation
 
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
@@ -21,6 +22,7 @@ from apps.leads.models import Lead, LeadSource, Tag
 from apps.leads.pagination import LeadPagination
 from apps.leads.permissions import LeadAccessPermission, LeadConfigurationPermission
 from apps.leads.serializers import (
+    LeadBulkDeleteSerializer,
     LeadDetailSerializer,
     LeadListSerializer,
     LeadSourceSerializer,
@@ -73,6 +75,8 @@ class LeadViewSet(OrganizationScopedBaseViewSet):
         return queryset.distinct().order_by(*self.ordering)
 
     def get_serializer_class(self):
+        if self.action == "bulk_delete":
+            return LeadBulkDeleteSerializer
         if self.action in {"list"}:
             return LeadListSerializer
         if self.action in {"retrieve"}:
@@ -102,6 +106,30 @@ class LeadViewSet(OrganizationScopedBaseViewSet):
         instance.refresh_from_db()
         output = LeadDetailSerializer(instance, context=self.get_serializer_context())
         return Response(output.data)
+
+    @action(detail=False, methods=["post"])
+    @transaction.atomic
+    def bulk_delete(self, request):
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {"detail": "Selecione ao menos um lead valido para excluir."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        lead_ids = list(dict.fromkeys(str(lead_id) for lead_id in serializer.validated_data["lead_ids"]))
+        leads = list(self.get_queryset().filter(id__in=lead_ids))
+
+        if len(leads) != len(lead_ids):
+            return Response(
+                {"detail": "Um ou mais leads selecionados nao estao disponiveis para exclusao."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        for lead in leads:
+            lead.soft_delete()
+
+        return Response({"deleted_count": len(leads)}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"])
     def export(self, request):
