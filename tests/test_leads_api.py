@@ -294,6 +294,50 @@ def test_import_csv_accepts_portuguese_template_columns():
 
 
 @pytest.mark.django_db
+def test_import_csv_rolls_back_all_rows_when_any_error_occurs():
+    user = User.objects.create_user(email="import-rollback@crm.com", password="StrongPass123")
+    organization = Organization.objects.create(name="Import Rollback", slug="import-rollback")
+    Membership.objects.create(
+        user=user,
+        organization=organization,
+        role=Membership.Role.MANAGER,
+        is_default=True,
+    )
+
+    client = auth_client_for(user)
+    csv_file = SimpleUploadedFile(
+        "leads-with-error.csv",
+        "Nome,Temperatura,Origem\n"
+        "Lead Valido,quente,Instagram\n"
+        "Lead Invalido,fervendo,LinkedIn\n".encode(),
+        content_type="text/csv",
+    )
+    mapping = {
+        "full_name": "Nome",
+        "email": "",
+        "phone": "",
+        "company_name": "",
+        "job_title": "",
+        "source_alias": "",
+        "temperature": "Temperatura",
+        "estimated_value": "",
+        "source": "Origem",
+    }
+
+    response = client.post(
+        "/api/v1/leads/import_csv/",
+        {"file": csv_file, "mapping": json.dumps(mapping)},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["imported_count"] == 0
+    assert response.json()["error_count"] == 1
+    assert response.json()["errors"][0]["row"] == 3
+    assert Lead.objects.filter(organization=organization).count() == 0
+    assert LeadSource.objects.filter(organization=organization).count() == 0
+
+
+@pytest.mark.django_db
 def test_bulk_delete_rejects_inaccessible_leads_for_sales():
     sales = User.objects.create_user(email="sales-bulk@crm.com", password="StrongPass123")
     manager = User.objects.create_user(email="manager-bulk@crm.com", password="StrongPass123")

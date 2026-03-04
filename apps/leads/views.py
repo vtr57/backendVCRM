@@ -196,6 +196,9 @@ class LeadViewSet(OrganizationScopedBaseViewSet):
 
     @action(detail=False, methods=["post"])
     def import_csv(self, request):
+        class _RollbackImport(Exception):
+            pass
+
         file = request.FILES.get("file")
         mapping_raw = request.data.get("mapping")
 
@@ -226,14 +229,22 @@ class LeadViewSet(OrganizationScopedBaseViewSet):
         imported_count = 0
         errors = []
 
-        for row_index, row in enumerate(reader, start=2):
-            if self._should_skip_import_row(row):
-                continue
-            try:
-                self._import_csv_row(request, row, mapping)
-                imported_count += 1
-            except Exception as exc:
-                errors.append({"row": row_index, "error": str(exc)})
+        try:
+            with transaction.atomic():
+                for row_index, row in enumerate(reader, start=2):
+                    if self._should_skip_import_row(row):
+                        continue
+                    try:
+                        # Use a savepoint per row so DB-level failures do not break the loop.
+                        with transaction.atomic():
+                            self._import_csv_row(request, row, mapping)
+                        imported_count += 1
+                    except Exception as exc:
+                        errors.append({"row": row_index, "error": str(exc)})
+                if errors:
+                    raise _RollbackImport
+        except _RollbackImport:
+            imported_count = 0
 
         return Response(
             {
