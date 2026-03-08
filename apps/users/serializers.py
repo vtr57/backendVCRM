@@ -40,6 +40,18 @@ class MembershipSerializer(serializers.ModelSerializer):
         fields = ["id", "role", "is_default", "is_active", "joined_at", "organization"]
 
 
+class TeamMemberSerializer(serializers.ModelSerializer):
+    user_id = serializers.UUIDField(source="user.id", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+    first_name = serializers.CharField(source="user.first_name", read_only=True)
+    last_name = serializers.CharField(source="user.last_name", read_only=True)
+    full_name = serializers.CharField(source="user.full_name", read_only=True)
+
+    class Meta:
+        model = Membership
+        fields = ["id", "user_id", "email", "first_name", "last_name", "full_name", "role"]
+
+
 class AuthUserSerializer(serializers.ModelSerializer):
     memberships = serializers.SerializerMethodField()
     current_membership = serializers.SerializerMethodField()

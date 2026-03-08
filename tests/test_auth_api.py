@@ -226,3 +226,46 @@ def test_me_returns_404_for_unknown_organization_header():
     response = client.get("/api/v1/auth/me/")
 
     assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_team_members_returns_active_members_for_selected_organization():
+    requester = User.objects.create_user(email="owner@team.com", password="StrongPass123", first_name="Owner")
+    teammate = User.objects.create_user(email="sales@team.com", password="StrongPass123", first_name="Sales")
+    outsider = User.objects.create_user(email="outsider@team.com", password="StrongPass123", first_name="Out")
+    organization = Organization.objects.create(name="Team Org", slug="team-org")
+    other_organization = Organization.objects.create(name="Other Org", slug="other-org")
+    Membership.objects.create(
+        user=requester,
+        organization=organization,
+        role=Membership.Role.OWNER,
+        is_default=True,
+    )
+    Membership.objects.create(
+        user=teammate,
+        organization=organization,
+        role=Membership.Role.SALES,
+    )
+    Membership.objects.create(
+        user=outsider,
+        organization=other_organization,
+        role=Membership.Role.SALES,
+        is_default=True,
+    )
+
+    client = APIClient()
+    login = client.post(
+        "/api/v1/auth/login/",
+        {
+            "email": "owner@team.com",
+            "password": "StrongPass123",
+        },
+        format="json",
+    ).json()
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {login['access']}")
+
+    response = client.get("/api/v1/auth/team-members/")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [member["email"] for member in body] == ["owner@team.com", "sales@team.com"]

@@ -116,6 +116,75 @@ def test_board_returns_stages_with_nested_deals():
 
 
 @pytest.mark.django_db
+def test_manager_board_returns_only_selected_team_member_deals():
+    manager = User.objects.create_user(email="manager-scope@crm.com", password="StrongPass123")
+    sales_a = User.objects.create_user(email="sales-a@crm.com", password="StrongPass123")
+    sales_b = User.objects.create_user(email="sales-b@crm.com", password="StrongPass123")
+    organization = Organization.objects.create(name="Scoped Org", slug="scoped-org")
+    Membership.objects.create(
+        user=manager,
+        organization=organization,
+        role=Membership.Role.MANAGER,
+        is_default=True,
+    )
+    Membership.objects.create(
+        user=sales_a,
+        organization=organization,
+        role=Membership.Role.SALES,
+        is_default=True,
+    )
+    Membership.objects.create(
+        user=sales_b,
+        organization=organization,
+        role=Membership.Role.SALES,
+        is_default=True,
+    )
+    pipeline = Pipeline.objects.get(organization=organization, is_default=True)
+    first_stage = pipeline.stages.filter(kind=Stage.Kind.OPEN).order_by("order").first()
+    lead_a = Lead.objects.create(
+        organization=organization,
+        full_name="Lead Sales A",
+        created_by=manager,
+        assigned_to=sales_a,
+    )
+    lead_b = Lead.objects.create(
+        organization=organization,
+        full_name="Lead Sales B",
+        created_by=manager,
+        assigned_to=sales_b,
+    )
+    Deal.objects.create(
+        organization=organization,
+        lead=lead_a,
+        pipeline=pipeline,
+        stage=first_stage,
+        title="Negócio Sales A",
+        amount="3000.00",
+        owner=sales_a,
+        created_by=manager,
+        position=0,
+    )
+    Deal.objects.create(
+        organization=organization,
+        lead=lead_b,
+        pipeline=pipeline,
+        stage=first_stage,
+        title="Negócio Sales B",
+        amount="4200.00",
+        owner=sales_b,
+        created_by=manager,
+        position=1,
+    )
+
+    client = auth_client_for(manager)
+    response = client.get(f"/api/v1/pipelines/board/?member_user_id={sales_a.id}")
+
+    assert response.status_code == 200
+    deals = response.json()["stages"][0]["deals"]
+    assert [deal["title"] for deal in deals] == ["Negócio Sales A"]
+
+
+@pytest.mark.django_db
 def test_pipeline_create_seeds_default_stages():
     user = User.objects.create_user(email="pipeline-create@crm.com", password="StrongPass123")
     organization = Organization.objects.create(name="Create Pipeline", slug="create-pipeline")
@@ -337,3 +406,72 @@ def test_sales_board_only_returns_owned_or_assigned_deals():
     assert response.status_code == 200
     deals = response.json()["stages"][0]["deals"]
     assert [deal["title"] for deal in deals] == ["Negócio Visível"]
+
+
+@pytest.mark.django_db
+def test_sales_board_ignores_team_member_filter_and_keeps_own_scope():
+    sales = User.objects.create_user(email="sales-scope@crm.com", password="StrongPass123")
+    other_sales = User.objects.create_user(email="sales-other@crm.com", password="StrongPass123")
+    manager = User.objects.create_user(email="manager-scope-2@crm.com", password="StrongPass123")
+    organization = Organization.objects.create(name="Theta", slug="theta")
+    Membership.objects.create(
+        user=sales,
+        organization=organization,
+        role=Membership.Role.SALES,
+        is_default=True,
+    )
+    Membership.objects.create(
+        user=other_sales,
+        organization=organization,
+        role=Membership.Role.SALES,
+        is_default=True,
+    )
+    Membership.objects.create(
+        user=manager,
+        organization=organization,
+        role=Membership.Role.MANAGER,
+        is_default=True,
+    )
+    pipeline = Pipeline.objects.get(organization=organization, is_default=True)
+    first_stage = pipeline.stages.filter(kind=Stage.Kind.OPEN).order_by("order").first()
+    own_lead = Lead.objects.create(
+        organization=organization,
+        full_name="Lead Próprio",
+        created_by=manager,
+        assigned_to=sales,
+    )
+    other_lead = Lead.objects.create(
+        organization=organization,
+        full_name="Lead de Outro",
+        created_by=manager,
+        assigned_to=other_sales,
+    )
+    Deal.objects.create(
+        organization=organization,
+        lead=own_lead,
+        pipeline=pipeline,
+        stage=first_stage,
+        title="Negócio Próprio",
+        amount="1500.00",
+        owner=sales,
+        created_by=manager,
+        position=0,
+    )
+    Deal.objects.create(
+        organization=organization,
+        lead=other_lead,
+        pipeline=pipeline,
+        stage=first_stage,
+        title="Negócio de Outro",
+        amount="1800.00",
+        owner=other_sales,
+        created_by=manager,
+        position=1,
+    )
+
+    client = auth_client_for(sales)
+    response = client.get(f"/api/v1/pipelines/board/?member_user_id={other_sales.id}")
+
+    assert response.status_code == 200
+    deals = response.json()["stages"][0]["deals"]
+    assert [deal["title"] for deal in deals] == ["Negócio Próprio"]

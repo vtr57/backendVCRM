@@ -11,9 +11,11 @@ from apps.users.serializers import (
     LoginSerializer,
     OrganizationSerializer,
     RegisterSerializer,
+    TeamMemberSerializer,
     build_auth_payload,
     build_token_pair_for_user,
 )
+from apps.users.models import Membership
 from apps.users.services import resolve_membership_for_request
 
 
@@ -63,3 +65,20 @@ class MeAPIView(APIView):
                 "organization": OrganizationSerializer(current_membership.organization).data,
             }
         )
+
+
+class TeamMembersAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        current_membership = resolve_membership_for_request(request, request.user)
+        memberships = (
+            Membership.objects.select_related("user")
+            .filter(
+                organization=current_membership.organization,
+                is_active=True,
+                user__is_active=True,
+            )
+            .order_by("user__first_name", "user__last_name", "user__email")
+        )
+        return Response(TeamMemberSerializer(memberships, many=True).data)

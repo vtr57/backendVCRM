@@ -20,9 +20,11 @@ from apps.pipeline.serializers import (
     StageSerializer,
 )
 from apps.pipeline.services import (
+    build_individual_deal_scope,
     ensure_user_can_access_deal,
     get_default_pipeline_for_organization,
     move_deal,
+    resolve_board_member_user,
     seed_pipeline_stages,
 )
 from apps.users.models import Membership
@@ -62,6 +64,7 @@ class PipelineViewSet(OrganizationScopedViewSet):
     @action(detail=False, methods=["get"], permission_classes=[PipelineAccessPermission])
     def board(self, request):
         pipeline_id = request.query_params.get("pipeline_id")
+        member_user_id = request.query_params.get("member_user_id")
         if pipeline_id:
             pipeline = get_object_or_404(
                 Pipeline,
@@ -79,13 +82,13 @@ class PipelineViewSet(OrganizationScopedViewSet):
         )
 
         membership = request.membership
-        if membership.role == Membership.Role.SALES:
-            deals_queryset = deals_queryset.filter(
-                Q(owner=request.user)
-                | Q(created_by=request.user)
-                | Q(lead__created_by=request.user)
-                | Q(lead__assigned_to=request.user)
-            )
+        board_member = resolve_board_member_user(
+            organization=self.get_organization(),
+            membership=membership,
+            request_user=request.user,
+            member_user_id=member_user_id,
+        )
+        deals_queryset = deals_queryset.filter(build_individual_deal_scope(board_member)).distinct()
 
         deal_map = {stage.id: [] for stage in stages}
         for deal in deals_queryset:

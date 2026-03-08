@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import F, Max
+from django.db.models import F, Max, Q
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -59,6 +59,39 @@ def get_next_position(stage: Stage) -> int:
     if current is None:
         return 0
     return current + 1
+
+
+def build_individual_deal_scope(user: User) -> Q:
+    return Q(owner=user) | Q(created_by=user) | Q(lead__created_by=user) | Q(lead__assigned_to=user)
+
+
+def resolve_board_member_user(
+    *,
+    organization: Organization,
+    membership: Membership,
+    request_user: User,
+    member_user_id: str | None = None,
+) -> User:
+    if membership.role == Membership.Role.SALES:
+        return request_user
+
+    if not member_user_id:
+        return request_user
+
+    try:
+        member_user = User.objects.get(id=member_user_id, is_active=True)
+    except User.DoesNotExist as exc:
+        raise ValidationError({"member_user_id": "Team member not found."}) from exc
+
+    has_membership = Membership.objects.filter(
+        organization=organization,
+        user=member_user,
+        is_active=True,
+    ).exists()
+    if not has_membership:
+        raise ValidationError({"member_user_id": "Team member does not belong to this organization."})
+
+    return member_user
 
 
 def record_initial_stage_movement(deal: Deal) -> None:
