@@ -34,7 +34,7 @@ def test_create_call_interaction_updates_lead_last_interaction():
     Membership.objects.create(
         user=user,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     lead = Lead.objects.create(
@@ -71,7 +71,7 @@ def test_create_note_interaction_forces_internal_direction():
     Membership.objects.create(
         user=user,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     lead = Lead.objects.create(
@@ -103,7 +103,7 @@ def test_message_requires_non_internal_direction():
     Membership.objects.create(
         user=user,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     lead = Lead.objects.create(
@@ -135,7 +135,7 @@ def test_lead_and_deal_timeline_return_interactions_in_descending_order():
     Membership.objects.create(
         user=user,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     lead = Lead.objects.create(
@@ -199,7 +199,7 @@ def test_delete_latest_interaction_recomputes_last_interaction():
     Membership.objects.create(
         user=user,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     lead = Lead.objects.create(
@@ -252,7 +252,7 @@ def test_sales_cannot_create_interaction_for_unrelated_lead():
     Membership.objects.create(
         user=manager,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     lead = Lead.objects.create(

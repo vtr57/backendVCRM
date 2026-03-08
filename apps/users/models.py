@@ -59,7 +59,6 @@ class Membership(TimeStampedModel):
     class Role(models.TextChoices):
         OWNER = "owner", "Owner"
         ADMIN = "admin", "Admin"
-        MANAGER = "manager", "Manager"
         SALES = "sales", "Sales"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

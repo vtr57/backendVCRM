@@ -130,7 +130,6 @@ def ensure_user_can_access_deal(membership: Membership, user: User, deal: Deal) 
     if membership.role in {
         Membership.Role.OWNER,
         Membership.Role.ADMIN,
-        Membership.Role.MANAGER,
     }:
         return
 
@@ -149,7 +148,6 @@ def ensure_user_can_access_lead(membership: Membership, user: User, lead: Lead) 
     if membership.role in {
         Membership.Role.OWNER,
         Membership.Role.ADMIN,
-        Membership.Role.MANAGER,
     }:
         return
 

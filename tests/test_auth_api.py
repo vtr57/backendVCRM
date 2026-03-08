@@ -105,7 +105,7 @@ def test_me_uses_default_membership_when_no_header_is_present():
     Membership.objects.create(
         user=user,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
 
@@ -125,7 +125,7 @@ def test_me_uses_default_membership_when_no_header_is_present():
     assert response.status_code == 200
     body = response.json()
     assert body["organization"]["slug"] == "umbrella"
-    assert body["user"]["current_membership"]["role"] == Membership.Role.MANAGER
+    assert body["user"]["current_membership"]["role"] == Membership.Role.ADMIN
 
 
 @pytest.mark.django_db

@@ -18,7 +18,6 @@ class PipelineAccessPermission(BasePermission):
         if membership.role in {
             Membership.Role.OWNER,
             Membership.Role.ADMIN,
-            Membership.Role.MANAGER,
         }:
             return True
 
@@ -53,5 +52,4 @@ class PipelineConfigurationPermission(BasePermission):
         return membership.role in {
             Membership.Role.OWNER,
             Membership.Role.ADMIN,
-            Membership.Role.MANAGER,
         }

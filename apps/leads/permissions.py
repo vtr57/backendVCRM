@@ -18,7 +18,6 @@ class LeadAccessPermission(BasePermission):
         if membership.role in {
             Membership.Role.OWNER,
             Membership.Role.ADMIN,
-            Membership.Role.MANAGER,
         }:
             return True
 
@@ -47,5 +46,4 @@ class LeadConfigurationPermission(BasePermission):
         return membership.role in {
             Membership.Role.OWNER,
             Membership.Role.ADMIN,
-            Membership.Role.MANAGER,
         }

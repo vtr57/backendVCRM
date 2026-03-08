@@ -56,7 +56,7 @@ def test_dashboard_returns_main_kpis_and_charts():
     Membership.objects.create(
         user=manager,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     Membership.objects.create(
@@ -116,7 +116,7 @@ def test_conversion_by_stage_report_uses_stage_history():
     Membership.objects.create(
         user=manager,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     lead = Lead.objects.create(organization=organization, full_name="Lead Stage", created_by=manager)
@@ -156,7 +156,7 @@ def test_conversion_by_owner_and_source_profitability_reports():
     Membership.objects.create(
         user=manager,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     Membership.objects.create(
@@ -206,7 +206,7 @@ def test_sales_analytics_are_scoped_to_owned_pipeline_data():
     Membership.objects.create(
         user=manager,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     Membership.objects.create(
@@ -275,7 +275,7 @@ def test_dashboard_service_uses_bounded_number_of_queries():
     membership = Membership.objects.create(
         user=manager,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     source = LeadSource.objects.create(name="Ads", organization=organization)

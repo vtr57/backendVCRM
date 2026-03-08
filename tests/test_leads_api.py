@@ -32,7 +32,7 @@ def test_manager_can_create_sources_tags_and_leads():
     Membership.objects.create(
         user=user,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     client = auth_client_for(user)
@@ -88,7 +88,7 @@ def test_sales_user_only_sees_owned_or_assigned_leads():
     Membership.objects.create(
         user=manager,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
 
@@ -125,7 +125,7 @@ def test_lead_list_supports_search_filters_and_ordering():
     Membership.objects.create(
         user=user,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     instagram = LeadSource.objects.create(name="Instagram", organization=organization)
@@ -207,7 +207,7 @@ def test_manager_can_bulk_delete_selected_leads():
     Membership.objects.create(
         user=user,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     first = Lead.objects.create(
@@ -252,7 +252,7 @@ def test_import_csv_accepts_portuguese_template_columns():
     Membership.objects.create(
         user=user,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
 
@@ -300,7 +300,7 @@ def test_import_csv_rolls_back_all_rows_when_any_error_occurs():
     Membership.objects.create(
         user=user,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
 
@@ -351,7 +351,7 @@ def test_bulk_delete_rejects_inaccessible_leads_for_sales():
     Membership.objects.create(
         user=manager,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     visible = Lead.objects.create(
@@ -438,7 +438,7 @@ def test_sales_cannot_update_unrelated_lead():
     Membership.objects.create(
         user=manager,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     lead = Lead.objects.create(

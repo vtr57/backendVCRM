@@ -41,7 +41,7 @@ def test_deal_create_uses_default_pipeline_and_first_stage():
     Membership.objects.create(
         user=user,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     lead = Lead.objects.create(
@@ -81,7 +81,7 @@ def test_board_returns_stages_with_nested_deals():
     Membership.objects.create(
         user=user,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     lead = Lead.objects.create(
@@ -124,7 +124,7 @@ def test_manager_board_returns_only_selected_team_member_deals():
     Membership.objects.create(
         user=manager,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     Membership.objects.create(
@@ -191,7 +191,7 @@ def test_pipeline_create_seeds_default_stages():
     Membership.objects.create(
         user=user,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
 
@@ -218,7 +218,7 @@ def test_move_endpoint_updates_deal_and_lead_status_and_records_history():
     Membership.objects.create(
         user=user,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     lead = Lead.objects.create(
@@ -273,7 +273,7 @@ def test_move_to_lost_requires_reason():
     Membership.objects.create(
         user=user,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     lead = Lead.objects.create(
@@ -315,7 +315,7 @@ def test_delete_deal_removes_only_deal_and_keeps_lead():
     Membership.objects.create(
         user=user,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     lead = Lead.objects.create(
@@ -360,7 +360,7 @@ def test_sales_board_only_returns_owned_or_assigned_deals():
     Membership.objects.create(
         user=manager,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     pipeline = Pipeline.objects.get(organization=organization, is_default=True)
@@ -429,7 +429,7 @@ def test_sales_board_ignores_team_member_filter_and_keeps_own_scope():
     Membership.objects.create(
         user=manager,
         organization=organization,
-        role=Membership.Role.MANAGER,
+        role=Membership.Role.ADMIN,
         is_default=True,
     )
     pipeline = Pipeline.objects.get(organization=organization, is_default=True)
